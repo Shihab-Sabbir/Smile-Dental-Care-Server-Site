@@ -76,8 +76,9 @@ async function run() {
 
         app.get('/review/user/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { uid: id }
+            const query = { user: id };
             const result = await reviewCollection.find(query).sort({ time: -1 }).toArray();
+            console.log(id,query,result)
             res.send(result);
         });
 
