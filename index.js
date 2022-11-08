@@ -44,7 +44,6 @@ async function run() {
         app.post('/jwt', (req, res) => {
             const data = req.body;
             const token = jwt.sign(data, process.env.SECRET, { expiresIn: '1d' });
-            console.log(token)
             res.send({ token });
         });
 
@@ -75,7 +74,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/review/user/:id', async (req, res) => {
+        app.get('/review/user/:id', jwtVerification, async (req, res) => {
             const id = req.params.id;
             const query = { user: id };
             const result = await reviewCollection.find(query).sort({ time: -1 }).toArray();
