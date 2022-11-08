@@ -70,7 +70,7 @@ async function run() {
         app.get('/review/:id', async (req, res) => {
             const id = req.params.id;
             const query = { serviceId: id }
-            const result = await reviewCollection.find(query).sort({time:-1}).toArray();
+            const result = await reviewCollection.find(query).sort({ time: -1 }).toArray();
             res.send(result);
         });
 
@@ -78,7 +78,14 @@ async function run() {
             const id = req.params.id;
             const query = { user: id };
             const result = await reviewCollection.find(query).sort({ time: -1 }).toArray();
-            console.log(id,query,result)
+            console.log(id, query, result)
+            res.send(result);
+        });
+
+        app.delete('/review/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await serviceCollection.deleteOne(query);
             res.send(result);
         });
 
@@ -97,12 +104,7 @@ async function run() {
         //     res.send(result);
         // })
 
-        // app.delete('/services/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: ObjectId(id) }
-        //     const result = await serviceCollection.deleteOne(query);
-        //     res.send(result);
-        // });
+
 
         //order collections
         // app.get('/orders', jwtVerification, async (req, res) => {
