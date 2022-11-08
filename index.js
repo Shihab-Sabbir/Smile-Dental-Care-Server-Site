@@ -48,8 +48,8 @@ async function run() {
         });
 
         app.get('/services', async (req, res) => {
-            const query = {};
-            const allData = serviceCollection.find(query);
+            const query = parseInt(req.query.limit);
+            const allData = serviceCollection.find({}).limit(query);
             const services = await allData.toArray();
             res.send(services);
         });
