@@ -89,20 +89,19 @@ async function run() {
             res.send(result);
         });
 
-        // app.put('/services/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: ObjectId(id) };
-        //     const service = req.body;
-        //     const option = { upsert: true };
-        //     const updatedUser = {
-        //         $set: {
-        //             name: user.name,
-        //             job: user.job
-        //         }
-        //     }
-        //     const result = await serviceCollection.updateOne(filter, updatedUser, option);
-        //     res.send(result);
-        // })
+        app.put('/review/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const { Reviewtitle, comment, rating, time } = req.body;
+            const option = { upsert: false };
+            const updatedUser = {
+                $set: {
+                    Reviewtitle: Reviewtitle, comment: comment, rating: rating, time: time
+                }
+            }
+            const result = await reviewCollection.updateOne(filter, updatedUser, option);
+            res.send(result);
+        })
 
 
 
