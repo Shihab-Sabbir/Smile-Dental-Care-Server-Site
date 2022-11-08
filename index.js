@@ -102,7 +102,12 @@ async function run() {
             const result = await reviewCollection.updateOne(filter, updatedUser, option);
             res.send(result);
         })
-
+        app.post('/add-service', async (req, res) => {
+            const service = req.body;
+            const result = await serviceCollection.insertOne(service);
+            console.log(result)
+            res.send(result);
+        })
 
 
         //order collections
@@ -119,11 +124,7 @@ async function run() {
         //     res.send(allOrders);
         // })
 
-        // app.post('/orders', async (req, res) => {
-        //     const order = req.body;
-        //     const result = await orderCollection.insertOne(order);
-        //     res.send(result);
-        // })
+
         // app.get('/orders/count', async (req, res) => {
         //     const uid = req.query.uid;
         //     const query = { uid: uid };
