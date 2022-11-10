@@ -22,7 +22,7 @@ function jwtVerification(req, res, next) {
     const token = authHeaders.split(' ')[1];
     jwt.verify(token, process.env.SECRET, function (err, decoded) {
         if (err) {
-            return res.status(401).send({ message: 'unauthorized access !' })
+            return res.status(403).send({ message: 'Forbidden access !' })
         }
         else {
             req.decoded = decoded;
@@ -43,15 +43,34 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const data = req.body;
-            const token = jwt.sign(data, process.env.SECRET, { expiresIn: '1d' });
+            const token = jwt.sign(data, process.env.SECRET, { expiresIn: '1h' });
             res.send({ token });
         });
 
         app.get('/services', async (req, res) => {
             const query = parseInt(req.query.limit);
-            const allData = serviceCollection.find({}).limit(query);
-            const services = await allData.toArray();
+            const data = serviceCollection.find({}).limit(query).sort({ _id: -1 });
+            const services = await data.toArray();
             res.send(services);
+        });
+        app.get('/services/pagination', async (req, res) => {
+            const limit = parseInt(req.query.limit);
+            const page = parseInt(req.query.page);
+            const allData = await serviceCollection.find({}).toArray();
+            const length = allData.length;
+            const data = serviceCollection.find({}).skip(page * limit).limit(limit).sort({ _id: -1 });
+            const services = await data.toArray();
+            res.send({ services, length });
+        });
+        app.get('/search', async (req, res) => {
+            const limit = parseInt(req.query.limit);
+            const page = parseInt(req.query.page);
+            const search = req.query.search;
+            const query = { $or: [{ description1: { $regex: search, $options: 'i' } }, { title: { $regex: search, $options: 'i' } }] };
+            const data = serviceCollection.find(query).skip(page * limit).limit(limit).sort({ _id: -1 });
+            const services = await data.toArray();
+            const length = services.length;
+            res.send({ services, length });
         });
 
         app.get('/services/:id', async (req, res) => {
@@ -75,10 +94,13 @@ async function run() {
         });
 
         app.get('/review/user/:id', jwtVerification, async (req, res) => {
+            const decoded = req.decoded;
             const id = req.params.id;
+            if (decoded.uid !== id) {
+                return res.status(403).send({ message: 'Forbidden access !' })
+            }
             const query = { user: id };
             const result = await reviewCollection.find(query).sort({ time: -1 }).toArray();
-            console.log(id, query, result)
             res.send(result);
         });
 
@@ -106,126 +128,6 @@ async function run() {
             const service = req.body;
             const result = await serviceCollection.insertOne(service);
             console.log(result)
-            res.send(result);
-        })
-
-
-        //order collections
-        // app.get('/orders', jwtVerification, async (req, res) => {
-        //     let query = {};
-        //     if (req.query.uid === req.decoded.uid) {
-        //         query = { uid: req.query.uid }
-        //     }
-        //     else {
-        //         return res.status(401).send({ message: 'unauthorized access !' })
-        //     }
-        //     const cursor = orderCollection.find(query);
-        //     const allOrders = await cursor.toArray();
-        //     res.send(allOrders);
-        // })
-
-
-        // app.get('/orders/count', async (req, res) => {
-        //     const uid = req.query.uid;
-        //     const query = { uid: uid };
-        //     const result = await orderCollection.find(query).toArray();
-        //     const productCount = result.length;
-        //     res.send({ productCount });
-        // })
-        // app.delete('/orders/:id', (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: ObjectId(id) };
-        //     const result = orderCollection.deleteOne(query);
-        //     res.send(result);
-        // })
-        // app.patch('/orders/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: ObjectId(id) };
-        //     const { status } = req.body;
-        //     const updatedOrder = {
-        //         $set: {
-        //             status: status
-        //         }
-        //     }
-        //     const result = await orderCollection.updateOne(filter, updatedOrder);
-        //     res.send(result);
-        //     console.log(result)
-        // })
-
-        //products
-
-        app.post('/products', async (req, res) => {
-            const product = req.body;
-            const result = await productCollection.insertOne(product)
-            res.send(result);
-        });
-        app.get('/products/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: ObjectId(id) };
-            const product = await productCollection.findOne(query);
-            res.send(product);
-        })
-        app.get('/products', async (req, res) => {
-            const query = {};
-            const product = await productCollection.find(query).toArray();
-            res.send(product);
-        })
-
-
-        //admin
-        app.get('/admin', async (req, res) => {
-            const admin = req.headers.email;
-            if (admin === 'admin@example.com') {
-                const cursor = orderCollection.find({});
-                const result = await cursor.toArray();
-                res.send(result);
-            }
-            else {
-                res.status(401).send({ message: 'unauthorized access!' })
-            }
-        })
-        //search
-        app.get('/search', async (req, res) => {
-            const search = req.query.search;
-            const query = { title: { $regex: search, $options: 'i' } }; // option is for case insensitive
-            const result1 = await productCollection.find(query).toArray();
-            const result2 = await serviceCollection.find(query).toArray();
-            const finalData = [...result1, ...result2];
-            res.send(finalData);
-        })
-        // appointment
-        app.post('/appointment', async (req, res) => {
-            const appointment = req.body;
-            const result = await appointmentCollection.insertOne(appointment);
-            res.send(result);
-        });
-        app.patch('/appointment/:id', async (req, res) => {
-            const status = req.body.status;
-            const id = req.params.id;
-            const query = { _id: ObjectId(id) };
-            const updatedAppointment = {
-                $set: {
-                    status: status
-                }
-            }
-            const result = await appointmentCollection.updateOne(query, updatedAppointment);
-            res.send(result);
-        })
-        app.get('/appointment/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { uid: id };
-            const result = await appointmentCollection.find(query).toArray();
-            res.send(result);
-        })
-        app.get('/appointment', async (req, res) => {
-            const query = {};
-            const result = await appointmentCollection.find(query).toArray();
-            res.send(result);
-        })
-        app.delete('/appointment/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: ObjectId(id) };
-            const result = await appointmentCollection.deleteOne(query);
             res.send(result);
         })
     } finally {
